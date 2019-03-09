@@ -243,6 +243,7 @@ static char *opt_name  = NULL;
 static char *opt_title = NULL;
 
 static int oldbutton = 3; /* button event on startup: 3 = release */
+static int bellon = 0;    /* visual bell status */
 
 void
 clipcopy(const Arg *dummy)
@@ -1649,6 +1650,15 @@ xbell(void)
 		xseturgency(1);
 	if (bellvolume)
 		XkbBell(xw.dpy, xw.win, bellvolume, (Atom)NULL);
+
+	/* visual bell*/
+	if (!bellon) {
+		bellon = 1;
+		MODBIT(win.mode, !IS_SET(MODE_REVERSE), MODE_REVERSE);
+		redraw();
+		XFlush(xw.dpy);
+		MODBIT(win.mode, !IS_SET(MODE_REVERSE), MODE_REVERSE);
+	}
 }
 
 void
@@ -1874,7 +1884,11 @@ run(void)
 					(handler[ev.type])(&ev);
 			}
 
-			draw();
+			if (bellon) {
+				bellon = 0;
+				redraw();
+			}
+			else draw();
 			XFlush(xw.dpy);
 
 			if (xev && !FD_ISSET(xfd, &rfd))
